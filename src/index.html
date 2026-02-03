@@ -1,77 +1,1528 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <link rel="stylesheet" href="styles.css" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus App</title>
-        <script type="module" src="/main.js" defer></script>
-    </head>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人人生KPI系统 v31.0 (单文件无限存储版)</title>
+    <style>
+        /* ==================== 样式表 (CSS) ==================== */
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+            --border-color: #e5e7eb;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --purple-color: #8b5cf6;
+            --scheme-color: #0ea5e9;
+            --mid-color: #f59e0b; 
+            --long-color: #0d9488; 
+            --sl-color: #7c3aed; 
+            --life-color: #db2777;
+            --cat-header-bg: #e0f2fe;
+        }
 
-    <body>
-        <main class="container">
-            <h1>Welcome to PakePlus</h1>
-            <form class="row" id="greet-form">
-                <input id="inputValue" placeholder="Enter a something..." />
-            </form>
-            <div class="resultBox">
-                <span>result: </span>
-                <span id="result"></span>
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            min-height: 80vh;
+            margin-bottom: 100px;
+        }
+
+        /* Tabs */
+        .tabs { display: flex; background-color: #1e293b; overflow-x: auto; }
+        .tab-btn { flex: 1; padding: 16px 20px; border: none; background: none; color: #94a3b8; cursor: pointer; font-size: 16px; font-weight: 600; white-space: nowrap; transition: background-color 0.3s; }
+        .tab-btn:hover { background-color: #334155; color: white; }
+        .tab-btn.active { background-color: var(--primary-color); color: white; }
+
+        .content-section { display: none; padding: 30px; }
+        .content-section.active { display: block; }
+
+        h2 { margin-top: 0; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px; color: #334155; }
+
+        /* Inputs */
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
+        input[type="text"], input[type="number"], input[type="password"], select { padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; }
+        
+        input.task-name { flex: 1; min-width: 150px; }
+        input.task-desc { flex: 2; min-width: 200px; }
+        input.task-weight, input.task-target { width: 100px; }
+        input.task-score { width: 80px; }
+        
+        input[type="date"], input[type="month"] { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; color: #334155; background: #fff; cursor: pointer; font-weight: bold; }
+
+        /* Buttons */
+        button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: opacity 0.2s; font-size: 14px; }
+        button:hover { opacity: 0.9; }
+        .btn-add { background-color: var(--success-color); color: white; }
+        .btn-delete { background-color: var(--danger-color); color: white; padding: 5px 10px; font-size: 12px; }
+        .btn-reset { background-color: #f59e0b; color: white; }
+        .btn-history { background-color: var(--purple-color); color: white; }
+        .btn-export { background-color: #059669; color: white; margin-bottom: 10px; }
+        .btn-scheme { background-color: var(--scheme-color); color: white; margin-right: 5px; }
+        .btn-create-period { background-color: #475569; color: white; margin-bottom: 20px; width: 100%; padding: 12px; border: 2px dashed #cbd5e1; font-size: 15px; }
+        .btn-create-period:hover { background-color: #334155; border-color: #94a3b8; }
+        .btn-create-cat { background-color: #64748b; color: white; font-size: 12px; padding: 6px 12px; }
+        .btn-chart-link { background: none; border: none; color: var(--primary-color); cursor: pointer; padding: 0; font-size: 13px; text-decoration: underline; margin-left: 5px; }
+        .btn-chart-link:hover { color: #1e3a8a; }
+
+        /* Period Cards */
+        .period-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; border-left: 5px solid #ccc; transition: all 0.3s ease; }
+        .period-card.locked { background-color: #f8fafc; border-color: #cbd5e1; opacity: 0.95; }
+        .period-card.locked input { background-color: #e2e8f0; color: #64748b; pointer-events: none; border-color: transparent; }
+        .period-card.locked button.btn-delete, .period-card.locked button.btn-add { display: none; }
+        .period-card.locked .input-group { display: none; }
+        .period-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+        .period-date-title input { font-size: 18px; font-weight: bold; color: #334155; border: 1px dashed #cbd5e1; padding: 5px 10px; background: #fff; }
+        
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border-color); }
+        th { background-color: #f8fafc; color: #64748b; font-weight: 700; font-size: 13px; }
+        td { font-size: 14px; }
+        .cat-header { background-color: var(--cat-header-bg); font-weight: bold; color: #0369a1; }
+        .cat-header td { border-top: 2px solid #bae6fd; padding-top: 15px; padding-bottom: 15px; }
+        .cat-total-info { font-weight: normal; color: #0c4a6e; font-size: 13px; margin-left: 15px; }
+        .history-row { cursor: pointer; transition: background 0.2s; }
+        .history-row:hover { background-color: #eff6ff; }
+        .detail-row { display: none; background-color: #f8fafc; }
+        .detail-row.show { display: table-row; }
+        .sub-table { width: 100%; font-size: 13px; background: white; border: 1px solid #e2e8f0; margin-top: 5px; margin-bottom: 10px; }
+        .sub-table th { background: #e2e8f0; color: #475569; }
+
+        .score-board { margin-top: 15px; padding: 20px; background-color: #eff6ff; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #bfdbfe; }
+        .total-score { font-size: 24px; font-weight: bold; color: var(--primary-color); }
+        
+        .top-toolbar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .toolbar-group { display: flex; align-items: center; gap: 8px; }
+
+        /* Modals & Charts */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 950px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; }
+        .close-modal { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #666; }
+        .chart-container { width: 100%; height: 300px; margin: 20px 0; background: #fdfdfd; border: 1px solid #eee; border-radius: 8px; display: block; }
+        svg { width: 100%; height: 100%; }
+        .chart-line { fill: none; stroke: var(--primary-color); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+        .chart-dot { fill: white; stroke: var(--primary-color); stroke-width: 2; cursor: pointer; }
+        .chart-grid { stroke: #e5e7eb; stroke-width: 1; stroke-dasharray: 4; }
+        .chart-tooltip-text { font-size: 12px; font-weight: bold; fill: #333; }
+
+        #mid .period-card { border-left-color: var(--mid-color); }
+        #long .period-card { border-left-color: var(--long-color); }
+        #super-long .period-card { border-left-color: var(--sl-color); }
+        #life .period-card { border-left-color: var(--life-color); }
+
+        /* AI Chat Button (Capsule) */
+        .ai-float-btn { position: fixed; bottom: 30px; right: 30px; width: auto; height: 50px; padding: 0 20px; background: linear-gradient(135deg, #2563eb, #7c3aed); border-radius: 50px; box-shadow: 0 4px 15px rgba(37,99,235,0.4); cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 18px; font-weight: bold; color: white; z-index: 2000; transition: transform 0.2s; }
+        .ai-float-btn:hover { transform: scale(1.1); }
+        
+        .chat-window { display: none; position: fixed; bottom: 100px; right: 30px; width: 400px; height: 650px; max-height: 80vh; background: white; border-radius: 12px; box-shadow: 0 5px 30px rgba(0,0,0,0.2); z-index: 2000; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0; }
+        .chat-header { background: linear-gradient(135deg, #2563eb, #7c3aed); padding: 15px; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .chat-settings-btn { background: #ef4444; color: white; padding: 5px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px solid #b91c1c; }
+        .chat-body { flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc; font-size: 14px; }
+        .chat-footer { padding: 15px; border-top: 1px solid #eee; background: white; display: flex; gap: 10px; }
+        .chat-input { flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; resize: none; height: 45px; font-family: inherit; }
+        .chat-send { background: var(--primary-color); color: white; border: none; padding: 0 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        
+        .msg { margin-bottom: 12px; max-width: 85%; line-height: 1.6; padding: 12px; border-radius: 8px; word-wrap: break-word; white-space: pre-wrap; }
+        .msg.user { background: #dbeafe; color: #1e3a8a; align-self: flex-end; margin-left: auto; }
+        .msg.ai { background: white; border: 1px solid #e2e8f0; color: #334155; align-self: flex-start; }
+        .msg.system { font-size: 12px; color: #94a3b8; text-align: center; max-width: 100%; background: none; border: none; }
+        .copy-btn { display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary-color); cursor: pointer; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 4px; background: #fff; transition: all 0.2s; }
+        .copy-btn:hover { background-color: #eff6ff; }
+        .config-panel { padding: 20px; background: #fff; border-bottom: 1px solid #eee; display: none; }
+        .config-panel.show { display: block; }
+        .config-input { width: 100%; margin-bottom: 15px; box-sizing: border-box; padding: 10px; }
+        .config-label { font-size: 12px; margin-bottom: 5px; color: #475569; font-weight: bold; display: block; }
+/* ==================== 新增样式 (v32) ==================== */
+        /* 聊天记录加载提示 */
+        .chat-loading-history {
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+            padding: 10px;
+            display: none; /* 默认隐藏 */
+        }
+        
+        /* 图表翻页控制栏 */
+        .chart-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 10px;
+            background: #f8fafc;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .btn-chart-nav {
+            background: white;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .btn-chart-nav:hover { background: #f1f5f9; color: var(--primary-color); }
+        .btn-chart-nav:disabled { color: #ccc; cursor: not-allowed; background: #f9f9f9; border-color: #eee; }
+        .chart-page-info { font-size: 12px; color: #64748b; font-weight: bold; }
+	/* ================= v33.0 时间控制台样式 ================= */
+        /* 左下角悬浮按钮 */
+        .time-float-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 30px; /* 左下角 */
+            height: 50px;
+            padding: 0 20px;
+            background: linear-gradient(135deg, #f59e0b, #d97706); /* 橙色系，区别于AI */
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            z-index: 2000;
+            transition: transform 0.2s;
+        }
+        .time-float-btn:hover { transform: scale(1.1); }
+
+        /* 时间控制台窗口 */
+        .time-window {
+            display: none;
+            position: fixed;
+            bottom: 100px;
+            left: 30px; /* 左侧弹出 */
+            width: 500px; /* 稍微宽一点放图表 */
+            max-height: 80vh;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+            z-index: 2000;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .time-header {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            padding: 15px;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .time-body { padding: 20px; overflow-y: auto; }
+        
+        /* 视图切换 Tabs */
+        .view-tabs { display: flex; border-bottom: 1px solid #eee; margin-bottom: 15px; }
+        .view-tab { 
+            flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #64748b; font-size: 14px; font-weight: bold;
+            transition: background 0.2s;
+        }
+        .view-tab.active { color: #d97706; border-bottom: 2px solid #d97706; background: #fffbeb; }
+
+        /* 统计卡片 */
+        .stat-grid { display: flex; gap: 10px; margin-bottom: 20px; }
+        .stat-card { flex: 1; padding: 10px; border-radius: 8px; text-align: center; color: white; }
+        .stat-card.ent { background: #ef4444; }
+        .stat-card.rew { background: #10b981; }
+        .stat-card.net { background: #2563eb; }
+        .stat-val { font-size: 18px; font-weight: bold; margin-top: 5px; }
+        .stat-label { font-size: 12px; opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <nav class="tabs">
+        <button class="tab-btn active" onclick="switchTab('daily')">每日 KPI</button>
+        <button class="tab-btn" onclick="switchTab('mid')">中期 KPI</button>
+        <button class="tab-btn" onclick="switchTab('long')">长期 KPI</button>
+        <button class="tab-btn" onclick="switchTab('super-long')">超长期 KPI</button>
+        <button class="tab-btn" onclick="switchTab('life')">人生规划</button>
+    </nav>
+
+    <div id="daily" class="content-section active">
+        <div class="top-toolbar">
+            <div class="toolbar-group">
+                <h2 style="margin:0; border:none; padding:0; margin-right: 15px; color: var(--primary-color);">每日 KPI</h2>
+                <button class="btn-scheme" onclick="saveCurrentAsScheme()">💾 存为方案</button>
+                <button class="btn-scheme" onclick="openSchemeModal()">📂 方案库</button>
             </div>
-            <div class="invokeBox">
-                <button id="openUrl" type="button">open_url_browser</button>
-                <button id="openUrlNew" type="button">open_url_new</button>
-                <button id="runCommand" type="button">run_command</button>
-                <button id="downloadFile" type="button">download_file</button>
-                <button id="getExeDir" type="button">get_exe_dir</button>
-                <button id="getEnvVar" type="button">get_env_var</button>
-                <button id="findPort" type="button">find_port</button>
-                <button id="openAskDialog" type="button">openAskDialog</button>
-                <button id="openConfirmDialog" type="button">
-                    openConfirmDialog
-                </button>
-                <button id="openMessageDialog" type="button">
-                    openMessageDialog
-                </button>
-                <button id="openFileDialog" type="button">
-                    openFileDialog
-                </button>
-                <button id="openDirDialog" type="button">openDirDialog</button>
-                <button id="openSaveDialog" type="button">
-                    openSaveDialog
-                </button>
-                <button id="videoTest" type="button">VideoTest</button>
-                <!-- file api -->
-                <button id="createFile" type="button">createFile</button>
-                <button id="writeTextFile" type="button">writeTextFile</button>
-                <button id="writeBinaryFile" type="button">
-                    writeBinaryFile
-                </button>
-                <button id="readTextFile" type="button">readTextFile</button>
-                <button id="readBinaryFile" type="button">
-                    readBinaryFile
-                </button>
-                <button id="readFile" type="button">readFile</button>
-                <button id="openFile" type="button">openFile</button>
-                <button id="readDir" type="button">readDir</button>
-                <button id="mkdir" type="button">mkdir</button>
-                <button id="watch" type="button">watch</button>
-                <button id="watchImmediate" type="button">
-                    watchImmediate
-                </button>
-                <button id="size" type="button">size</button>
-                <button id="exists" type="button">exists</button>
-                <button id="remove" type="button">remove</button>
-                <button id="copyFile" type="button">copyFile</button>
-                <button id="rename" type="button">rename</button>
+            <div class="toolbar-group">
+                <button class="btn-history" onclick="openHistoryModal('daily')">📊 历史档案 (无限)</button>
+		<div style="margin-bottom:10px; display:flex; gap:10px;">
+    <input type="number" id="dailyEnt" placeholder="娱乐消耗" 
+           oninput="localStorage.setItem('temp_dailyEnt', this.value)"
+           style="width:100px; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-weight:bold; color:#ef4444;">
+           
+    <input type="number" id="dailyRew" placeholder="奖励获得" 
+           oninput="localStorage.setItem('temp_dailyRew', this.value)"
+           style="width:100px; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-weight:bold; color:#10b981;">
+</div>
+                <span style="font-size:14px; color:#64748b;">存档日期:</span>
+                <input type="date" id="kpiDate">
+                <button class="btn-reset" onclick="archiveAndResetDay()">💾 结束今日并存档</button>
             </div>
-            <video
-                src="https://gh-proxy.org/https://github.com/worker500/FileHub/blob/main/root/IronMan.mp4"
-                controls
-                width="100%"
-                height="100%"
-                class="video"
-            ></video>
-        </main>
-    </body>
+        </div>
+        
+        <div style="margin-bottom: 15px; padding: 15px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; gap: 15px; border: 1px solid #e2e8f0;">
+            <span style="font-weight: bold; font-size: 14px; color: #475569;">分类管理:</span>
+            <button class="btn-create-cat" onclick="createCategory()">+ 新建分类</button>
+            <span style="font-size: 12px; color: #94a3b8;">(删除分类会同时删除该分类下的所有项目)</span>
+        </div>
+
+        <div class="input-group">
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <label style="font-size:12px; color:#666;">选择分类</label>
+                <select id="newDailyCat" style="min-width: 150px;"></select>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:5px; flex:1;">
+                <label style="font-size:12px; color:#666;">项目名称</label>
+                <input type="text" id="newDailyName" class="task-name" placeholder="例如：健身">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:5px; flex:2;">
+                <label style="font-size:12px; color:#666;">具体要求</label>
+                <input type="text" id="newDailyDesc" class="task-desc" placeholder="例如：30分钟">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <label style="font-size:12px; color:#666;">权重(%)</label>
+                <input type="number" id="newDailyWeight" class="task-weight" placeholder="0-100" step="0.1" min="0">
+            </div>
+            <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+                <button class="btn-add" onclick="addDailyItem()">添加项目</button>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:20%">项目名称</th>
+                    <th style="width:30%">具体要求</th>
+                    <th style="width:10%">权重</th>
+                    <th style="width:15%">完成度 (0-100+)</th>
+                    <th style="width:10%">加权得分</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="dailyList"></tbody>
+        </table>
+
+        <div class="score-board">
+            <div>当前总权重: <span id="totalWeightDisplay">0</span>% <span id="weightWarning" class="weight-warning" style="display:none; color:red; margin-left:10px;">(注意：未达100%)</span></div>
+            <div class="total-score">今日总分: <span id="finalScoreDisplay">0.0</span></div>
+        </div>
+    </div>
+
+    <div id="mid" class="content-section">
+        <div class="top-toolbar">
+            <h2 style="margin:0; border:none; color: var(--mid-color);">中期 KPI (两周节点)</h2>
+            <button class="btn-history" onclick="openHistoryModal('mid')">📊 历史档案</button>
+        </div>
+        <button class="btn-create-period" onclick="createNewPeriod('mid')">+ 创建新的中期结束节点</button>
+        <div id="midPeriodsContainer"></div>
+    </div>
+
+    <div id="long" class="content-section">
+        <div class="top-toolbar">
+            <h2 style="margin:0; border:none; color: var(--long-color);">长期 KPI (两月/季度节点)</h2>
+            <button class="btn-history" onclick="openHistoryModal('long')">📊 历史档案</button>
+        </div>
+        <button class="btn-create-period" onclick="createNewPeriod('long')">+ 创建新的长期结束节点</button>
+        <div id="longPeriodsContainer"></div>
+    </div>
+
+    <div id="super-long" class="content-section">
+        <div class="top-toolbar">
+            <h2 style="margin:0; border:none; color: var(--sl-color);">超长期 KPI (半年节点)</h2>
+            <button class="btn-history" onclick="openHistoryModal('super-long')">📊 历史档案</button>
+        </div>
+        <button class="btn-create-period" onclick="createNewPeriod('super-long')">+ 创建新的超长期结束节点</button>
+        <div id="super-longPeriodsContainer"></div>
+    </div>
+
+    <div id="life" class="content-section">
+        <div class="top-toolbar">
+            <h2 style="margin:0; border:none; color: var(--life-color);">人生规划 (5年计划)</h2>
+            <button class="btn-history" onclick="openHistoryModal('life')">📊 历史档案</button>
+        </div>
+        <button class="btn-create-period" onclick="createNewPeriod('life')">+ 创建新的人生规划节点</button>
+        <div id="lifePeriodsContainer"></div>
+    </div>
+
+</div>
+
+<div class="ai-float-btn" onclick="toggleChatWindow()">🤖 AI</div>
+
+<div class="chat-window" id="chatWindow">
+    <div class="chat-header">
+        <span>AI 人生教练</span>
+        <span class="chat-settings-btn" onclick="toggleConfigPanel()">⚙️ API设置</span>
+    </div>
+    
+    <div class="config-panel" id="configPanel">
+        <div class="config-label">Base URL (接口地址)</div>
+        <input type="text" id="apiHost" class="config-input" placeholder="例如: https://dashscope.aliyuncs.com/compatible-mode/v1">
+        <div class="config-label">模型名称 (Model)</div>
+        <input type="text" id="apiModel" class="config-input" placeholder="例如: qwen-plus, qwen-turbo">
+        <div class="config-label">API Key</div>
+        <input type="password" id="apiKey" class="config-input" placeholder="sk-...">
+        <button onclick="saveApiConfig()" style="width:100%; background:var(--success-color); color:white; border:none; padding:12px; border-radius:4px; cursor:pointer; font-weight:bold;">保存配置</button>
+    </div>
+
+    <div class="chat-body" id="chatBody">
+        <div class="msg system" style="border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px; margin-bottom: 15px;">
+            <strong style="color: #d97706;">⚠️ 温馨提示：</strong><br>
+            系统加载历史对话可能有时延<br>
+            ------------------------------------------------<br>
+            欢迎！请先点击右上角红色“API设置”按钮配置。<br>
+            我会读取您的分类、权重和历史趋势进行分析。
+        </div>
+    </div>
+    <div class="chat-footer">
+        <textarea id="chatInput" class="chat-input" placeholder="请输入您的问题..."></textarea>
+        <button class="chat-send" onclick="sendToAI()">发送</button>
+    </div>
+</div>
+
+<div id="genericHistoryModal" class="modal-overlay" onclick="closeGenericHistoryModal(event)">
+    <div class="modal-content">
+        <span class="close-modal" onclick="document.getElementById('genericHistoryModal').style.display='none'">&times;</span>
+        <h2 id="historyModalTitle">历史记录 (无限存档)</h2>
+        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <p id="historySubtitle" style="color:#666; font-size:14px;">上方为总分走势。点击分类或项目名称可查看细分趋势。</p>
+            <button class="btn-export" id="btnExportHistory">📥 导出Excel数据</button>
+        </div>
+        <div class="chart-container" id="genericChartContainer"></div>
+	<div class="chart-container" id="timeChartContainer" style="display:none; border-top:3px solid #e2e8f0; margin-top:30px;"></div>
+        <table id="genericHistoryTable" style="margin-top:20px;">
+            <thead>
+                <tr>
+                    <th>存档时间 (节点)</th>
+                    <th>状态</th>
+                    <th id="historyScoreHeader">总得分</th>
+                    <th style="text-align:right;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="genericHistoryList"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="schemeModal" class="modal-overlay" onclick="closeSchemeModal(event)">
+    <div class="modal-content">
+        <span class="close-modal" onclick="document.getElementById('schemeModal').style.display='none'">&times;</span>
+        <h2>方案库</h2>
+        <p style="color:#666; font-size:13px; margin-bottom:15px;">点击“应用”将覆盖当前每日KPI的所有分类和项目。</p>
+        <table id="schemeTable">
+            <thead>
+                <tr>
+                    <th style="width:20%">方案名称</th>
+                    <th style="width:60%">包含分类/项目详情</th>
+                    <th style="text-align:right; width:20%">操作</th>
+                </tr>
+            </thead>
+            <tbody id="schemeList"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    /* script.js - 个人人生KPI系统 v31.0 (IndexedDB 无限存储版) */
+
+    // ==========================================
+    // 1. IndexedDB 适配器 (无限存储核心)
+    // ==========================================
+    const DB_CONFIG = { name: 'LifeKPI_Unlimited_DB', version: 1, storeName: 'appDataStore' };
+    const DATA_KEY = 'main_app_data'; 
+
+    const IDB = {
+        db: null,
+        init: function() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(DB_CONFIG.storeName)) {
+                        db.createObjectStore(DB_CONFIG.storeName);
+                    }
+                };
+                req.onsuccess = (e) => {
+                    this.db = e.target.result;
+                    resolve(this.db);
+                };
+                req.onerror = (e) => reject(e);
+            });
+        },
+        save: function(data) {
+            if (!this.db) return;
+            const tx = this.db.transaction([DB_CONFIG.storeName], 'readwrite');
+            tx.objectStore(DB_CONFIG.storeName).put(data, DATA_KEY);
+        },
+        load: function() {
+            return new Promise((resolve, reject) => {
+                if (!this.db) return resolve(null);
+                const tx = this.db.transaction([DB_CONFIG.storeName], 'readonly');
+                const req = tx.objectStore(DB_CONFIG.storeName).get(DATA_KEY);
+                req.onsuccess = (e) => resolve(e.target.result);
+                req.onerror = (e) => reject(e);
+            });
+        }
+    };
+
+    // ==========================================
+    // 2. 应用主逻辑
+    // ==========================================
+    const OLD_STORAGE_KEY = 'life_system_data_v23'; 
+    const API_CONFIG_KEY = 'life_system_api_config';
+
+    let appData = {
+        dailyCategories: [], dailyItems: [], dailyHistory: [], schemes: [],
+        midPeriods: [], midHistory: [],
+        longPeriods: [], longHistory: [],
+        superLongPeriods: [], superLongHistory: [],
+        lifePeriods: [], lifeHistory: [],
+        chatHistory: []
+    };
+
+    function getPropName(type, suffix) {
+        if (type === 'super-long') return 'superLong' + suffix;
+        return type + suffix;
+    }
+
+    // ★★★ 核心修改：改为异步加载，并包含迁移逻辑 ★★★
+    async function loadData() {
+        await IDB.init(); // 初始化 IndexedDB
+        
+        // 1. 尝试从 IndexedDB 加载
+        const dbData = await IDB.load();
+        
+        if (dbData) {
+            appData = { ...appData, ...dbData };
+        } else {
+            // 2. 第一次运行：从旧 LocalStorage 迁移数据
+            const oldData = localStorage.getItem(OLD_STORAGE_KEY);
+            if (oldData) {
+                console.log("正在从 LocalStorage 迁移数据到 IndexedDB...");
+                const parsed = JSON.parse(oldData);
+                if (parsed.history && !parsed.dailyHistory) parsed.dailyHistory = parsed.history;
+                appData = { ...appData, ...parsed };
+                saveData(); 
+            }
+        }
+
+        // 初始化默认分类
+        const DEFAULT_CAT_NAME = "默认分类（用户可删除）";
+        if (!appData.dailyCategories || appData.dailyCategories.length === 0) {
+            const defId = Date.now();
+            appData.dailyCategories = [{ id: defId, name: DEFAULT_CAT_NAME }];
+            if(appData.dailyItems.length > 0) appData.dailyItems.forEach(i => { if(!i.catId) i.catId = defId; });
+        }
+
+        // 加载 API 配置
+        const apiConfig = JSON.parse(localStorage.getItem(API_CONFIG_KEY) || '{}');
+        document.getElementById('apiHost').value = apiConfig.host || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+        document.getElementById('apiModel').value = apiConfig.model || 'qwen-plus';
+        document.getElementById('apiKey').value = apiConfig.key || '';
+
+        // 渲染界面
+        renderDailyTable();
+        renderPeriods('mid'); renderPeriods('long'); renderPeriods('super-long'); renderPeriods('life');
+        
+        const now = new Date();
+        const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        document.getElementById('kpiDate').value = localDate;
+        
+        if(appData.chatHistory && appData.chatHistory.length > 0) renderChatHistory();
+    }
+
+    // ★★★ 核心修改：保存到 IndexedDB ★★★
+    function saveData() { 
+        IDB.save(appData); 
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        const tabs = ['daily', 'mid', 'long', 'super-long', 'life'];
+        document.querySelectorAll('.tab-btn')[tabs.indexOf(tabId)].classList.add('active');
+    }
+
+    // ... (标准功能函数) ...
+    function createCategory() {
+        const name = prompt("请输入新分类名称:");
+        if(!name) return;
+        appData.dailyCategories.push({ id: Date.now(), name: name });
+        saveData(); renderDailyTable();
+    }
+
+    function deleteCategory(catId) {
+        const cat = appData.dailyCategories.find(c => c.id === catId);
+        if(appData.dailyCategories.length === 1) return alert("必须保留至少一个分类。");
+        if(confirm(`警告：确定删除分类【${cat.name}】吗？\n\n注意：该分类下的所有项目也将被永久删除！`)) {
+            appData.dailyItems = appData.dailyItems.filter(i => i.catId !== catId);
+            appData.dailyCategories = appData.dailyCategories.filter(c => c.id !== catId);
+            saveData(); renderDailyTable();
+        }
+    }
+
+    function renameCategory(catId) {
+        const cat = appData.dailyCategories.find(c => c.id === catId);
+        const newName = prompt("重命名分类:", cat.name);
+        if(newName) { cat.name = newName; saveData(); renderDailyTable(); }
+    }
+
+    function addDailyItem() {
+        const catId = parseInt(document.getElementById('newDailyCat').value);
+        const name = document.getElementById('newDailyName').value.trim();
+        const desc = document.getElementById('newDailyDesc').value.trim();
+        const weight = parseFloat(document.getElementById('newDailyWeight').value);
+        if (!catId) return alert("请先创建并选择一个分类");
+        if (!name || isNaN(weight)) return alert('请输入正确信息');
+        appData.dailyItems.push({ id: Date.now(), catId, name, desc, weight, score: 0 });
+        ['newDailyName','newDailyDesc','newDailyWeight'].forEach(id=>document.getElementById(id).value='');
+        saveData(); renderDailyTable();
+    }
+
+    function deleteDailyItem(id) {
+        if(confirm('删除此项目？')) { appData.dailyItems = appData.dailyItems.filter(i => i.id !== id); saveData(); renderDailyTable(); }
+    }
+
+    function updateDailyScore(id, val) {
+        let score = parseFloat(val); if (isNaN(score) || score < 0) score = 0;
+        const item = appData.dailyItems.find(i => i.id === id);
+        if(item) { item.score = score; saveData(); renderDailyTable(); } 
+    }
+
+    function changeItemCategory(itemId, newCatId) {
+        const item = appData.dailyItems.find(i => i.id === itemId);
+        if(item) { item.catId = parseInt(newCatId); saveData(); renderDailyTable(); }
+    }
+
+    function renderDailyTable() {
+        const catSelect = document.getElementById('newDailyCat');
+        const currentSel = catSelect.value;
+        catSelect.innerHTML = appData.dailyCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        if(currentSel && appData.dailyCategories.some(c=>c.id==currentSel)) catSelect.value = currentSel;
+
+        const tbody = document.getElementById('dailyList'); tbody.innerHTML = '';
+        let totalWeight = 0; let totalScore = 0;
+
+        appData.dailyCategories.forEach(cat => {
+            const items = appData.dailyItems.filter(i => i.catId === cat.id);
+            let catWeight = 0; let catScore = 0;
+            items.forEach(i => { catWeight += i.weight; catScore += (i.score * (i.weight / 100)); });
+            totalWeight += catWeight; totalScore += catScore;
+
+            tbody.innerHTML += `
+                <tr class="cat-header">
+                    <td colspan="6">
+                        <span>📂 ${cat.name}</span>
+                        <span class="cat-total-info">(该类总权重: ${catWeight.toFixed(1)}% | 贡献总分: ${catScore.toFixed(2)})</span>
+                        <div style="float:right;">
+                            <button style="background:none; color:#2563eb; border:none; padding:0 5px;" onclick="renameCategory(${cat.id})">重命名</button>
+                            <button style="background:none; color:#dc2626; border:none; padding:0 5px;" onclick="deleteCategory(${cat.id})">删除分类</button>
+                        </div>
+                    </td>
+                </tr>`;
+            items.forEach(item => {
+                const weightedScore = (item.score * (item.weight / 100)).toFixed(2);
+                const catOptions = appData.dailyCategories.map(c => `<option value="${c.id}" ${c.id === item.catId ? 'selected' : ''}>${c.name}</option>`).join('');
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="padding-left: 25px;">${item.name}</td>
+                        <td style="font-size:12px; color:#666;">${item.desc || '-'}</td>
+                        <td>${item.weight.toFixed(1)}%</td>
+                        <td><input type="number" value="${item.score}" class="task-score" onchange="updateDailyScore(${item.id}, this.value)"></td>
+                        <td>${weightedScore}</td>
+                        <td>
+                            <select style="width:90px; padding:2px; font-size:11px; margin-right:5px;" onchange="changeItemCategory(${item.id}, this.value)">${catOptions}</select>
+                            <button class="btn-delete" onclick="deleteDailyItem(${item.id})">删除</button>
+                        </td>
+                    </tr>`;
+            });
+        });
+        document.getElementById('totalWeightDisplay').innerText = totalWeight.toFixed(1);
+        document.getElementById('weightWarning').style.display = Math.abs(totalWeight - 100) > 0.1 ? 'inline' : 'none';
+        document.getElementById('finalScoreDisplay').innerText = totalScore.toFixed(2);
+    }
+
+    // ★★★ 核心修改：无限制存档 (Daily) ★★★
+    function archiveAndResetDay() {
+        const score = document.getElementById('finalScoreDisplay').innerText;
+        const dateInput = document.getElementById('kpiDate').value;
+        const entTime = parseFloat(document.getElementById('dailyEnt').value) || 0;
+        const rewTime = parseFloat(document.getElementById('dailyRew').value) || 0;
+
+        if (!dateInput) return alert("请选择日期");
+        if (!confirm(`确认存档每日KPI？\n\n日期：${dateInput}\n今日总分：${score}\n娱乐消耗：${entTime}\n奖励获得：${rewTime}`)) return;
+        
+        appData.dailyHistory.push({ 
+            date: dateInput, 
+            periodName: 'Daily', 
+            score: parseFloat(score), 
+            timestamp: new Date(dateInput).getTime(), 
+            entertainmentTime: entTime,
+            rewardTime: rewTime,
+            items: JSON.parse(JSON.stringify(appData.dailyItems)), 
+            categories: JSON.parse(JSON.stringify(appData.dailyCategories))
+        });
+        
+        appData.dailyHistory.sort((a,b) => b.timestamp - a.timestamp);
+
+        let c = parseInt(localStorage.getItem('daily_archive_count_v30') || '0') + 1;
+        localStorage.setItem('daily_archive_count_v30', c);
+        if (c % 30 === 0) if(confirm(`已累计存档 ${c} 次。是否导出备份？`)) exportToCSV('daily'); 
+
+        appData.dailyItems.forEach(i => i.score = 0);
+        
+        // 清空输入框和缓存
+        document.getElementById('dailyEnt').value = '';
+        document.getElementById('dailyRew').value = '';
+        localStorage.removeItem('temp_dailyEnt');
+        localStorage.removeItem('temp_dailyRew');
+
+        saveData(); renderDailyTable();
+        alert("已存档");
+    }
+
+    // ... (Schemes - Standard) ...
+    function saveCurrentAsScheme() {
+        if(appData.dailyItems.length===0) return alert("空列表");
+        const name = prompt("方案名:"); if(!name) return;
+        appData.schemes.push({
+            id:Date.now(), name, 
+            items: JSON.parse(JSON.stringify(appData.dailyItems)),
+            categories: JSON.parse(JSON.stringify(appData.dailyCategories))
+        }); 
+        saveData(); alert("保存成功");
+    }
+    function openSchemeModal() { 
+        document.getElementById('schemeModal').style.display='flex'; 
+        const t = document.getElementById('schemeList'); t.innerHTML='';
+        appData.schemes.forEach((s, i) => {
+            let details = s.categories ? "包含分类信息" : s.items.map(it => it.name).join(', ');
+            t.innerHTML += `<tr><td style="font-weight:bold;">${s.name}</td><td>${details}</td><td style="text-align:right;"><button class="btn-scheme" onclick="applyScheme(${i})">应用</button><button class="btn-delete" onclick="if(confirm('删除?')){appData.schemes.splice(${i},1); saveData(); openSchemeModal();}">删除</button></td></tr>`;
+        });
+    }
+    function applyScheme(i) {
+        if(!confirm("应用此方案将覆盖当前项目，继续？")) return;
+        const s = appData.schemes[i];
+        appData.dailyCategories = JSON.parse(JSON.stringify(s.categories || [{id:1, name:"默认分类"}]));
+        appData.dailyItems = JSON.parse(JSON.stringify(s.items));
+        appData.dailyItems.forEach(x => x.score = 0);
+        saveData(); renderDailyTable(); document.getElementById('schemeModal').style.display='none';
+    }
+    function closeSchemeModal(e){ if(e.target.className === 'modal-overlay') document.getElementById('schemeModal').style.display='none'; }
+
+    // ... (Period Manager - Standard) ...
+    function getDefaultDate(type) {
+        const now = new Date();
+        const local = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+        if(type === 'life') return local.getFullYear();
+        if(type === 'long' || type === 'super-long') return local.toISOString().slice(0, 7); 
+        return local.toISOString().split('T')[0];
+    }
+    function createNewPeriod(type) {
+        const key = getPropName(type, 'Periods');
+        appData[key].unshift({ id: Date.now(), date: getDefaultDate(type), items: [], isArchived: false, archiveDate: null });
+        saveData(); renderPeriods(type);
+    }
+    function deletePeriod(type, id) {
+        if(confirm("确定删除？")) {
+            const key = getPropName(type, 'Periods');
+            const idx = appData[key].findIndex(p => p.id === id);
+            if (idx > -1) { appData[key].splice(idx, 1); saveData(); renderPeriods(type); }
+        }
+    }
+    function updatePeriodDate(type, id, val) { const key = getPropName(type, 'Periods'); appData[key].find(p => p.id === id).date = val; saveData(); }
+    function addItemToPeriod(type, id) {
+        const key = getPropName(type, 'Periods');
+        const p = appData[key].find(p => p.id === id);
+        const name = document.getElementById(`name-${id}`).value.trim();
+        const desc = document.getElementById(`desc-${id}`).value.trim();
+        if(!name) return alert("名称必填");
+        let newItem = { id: Date.now(), name, desc, ratio: 0 };
+        if (type === 'mid' || type === 'long') {
+            const t = parseFloat(document.getElementById(`target-${id}`).value);
+            if(isNaN(t)) return alert("请输入目标分");
+            newItem.target = t; document.getElementById(`target-${id}`).value = '';
+        }
+        p.items.push(newItem);
+        ['name','desc'].forEach(x=>document.getElementById(`${x}-${id}`).value='');
+        saveData(); renderPeriods(type);
+    }
+    function updatePeriodItem(type, id, iIdx, field, val) {
+        const key = getPropName(type, 'Periods');
+        const p = appData[key].find(p => p.id === id);
+        let n = parseFloat(val); if(isNaN(n)||n<0) n=0; 
+        p.items[iIdx][field] = n; saveData();
+        if(type==='mid'||type==='long') renderPeriods(type);
+    }
+    function deletePeriodItem(type, id, iIdx) {
+        if(confirm("删除此项目？")) { 
+            const key = getPropName(type, 'Periods');
+            appData[key].find(p => p.id === id).items.splice(iIdx, 1); saveData(); renderPeriods(type); 
+        }
+    }
+
+    function archivePeriod(type, id) {
+        const pKey = getPropName(type, 'Periods');
+        const hKey = getPropName(type, 'History');
+        const p = appData[pKey].find(p => p.id === id);
+        
+        if(!p.date) return alert("请设置日期");
+        
+        let s = 0; if(type==='mid'||type==='long') p.items.forEach(i => s += i.target * (i.ratio/100));
+        
+        // 1. 询问奖励
+        let rewardInput = prompt(`恭喜完成【${type === 'life' ? '人生' : '阶段'}节点】！\n请输入该节点为您带来的【奖励时间】：`, "0");
+        if (rewardInput === null) return; 
+        let rewardTime = parseFloat(rewardInput);
+        if (isNaN(rewardTime)) rewardTime = 0;
+
+        if(!confirm(`确认结算节点：${p.date}？\n获得奖励时间：${rewardTime}`)) return;
+        
+        // ★★★ 核心修复：强制转为字符串，确保人生规划(2025)能被正确识别 ★★★
+        let ts;
+        const dStr = String(p.date); // 关键：加了 String()，数字变文字
+        
+        if (dStr.length === 4) { 
+            // 格式 "2025" -> 强制设为 2025年12月31日 23:59:59
+            const year = parseInt(dStr);
+            ts = new Date(year, 11, 31, 23, 59, 59).getTime(); 
+        } else if (dStr.length === 7) { 
+            // 格式 "2025-05" -> 强制设为当月最后一天
+            const parts = dStr.split('-');
+            const year = parseInt(parts[0]);
+            const month = parseInt(parts[1]); 
+            ts = new Date(year, month, 0, 23, 59, 59).getTime();
+        } else { 
+            // 格式 "2025-05-12" -> 当天
+            const parts = dStr.split('-');
+            ts = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]), 23, 59, 59).getTime();
+        }
+        
+        appData[hKey].push({
+            date: p.date, 
+            periodName: p.date, 
+            score: (type==='mid'||type==='long') ? parseFloat(s.toFixed(2)) : 0, 
+            timestamp: ts, 
+            items: JSON.parse(JSON.stringify(p.items)),
+            rewardTime: rewardTime
+        });
+        
+        appData[hKey].sort((a,b) => b.timestamp - a.timestamp);
+        
+        let cKey = 'archive_count_' + type + '_v30';
+        let c = parseInt(localStorage.getItem(cKey) || '0') + 1;
+        localStorage.setItem(cKey, c);
+        if (c % 10 === 0) if(confirm(`已累计存档 ${c} 次，导出数据？`)) exportToCSV(type);
+
+        p.isArchived = true; p.archiveDate = p.date; 
+        saveData(); renderPeriods(type);
+    }
+    function renderPeriods(type) {
+        const containerId = type === 'super-long' ? 'super-longPeriodsContainer' : type + 'PeriodsContainer';
+        const cont = document.getElementById(containerId); if(!cont) return; cont.innerHTML = '';
+        const key = getPropName(type, 'Periods');
+        const all = appData[key] || [];
+        const active = all.filter(p => !p.isArchived);
+        // ★★★ 核心修改：显示所有已归档节点，不再 slice(0, 7) ★★★
+        const archived = all.filter(p => p.isArchived).sort((a,b) => (b.archiveDate > a.archiveDate ? 1 : -1));
+        const renderList = [...active, ...archived]; // 显示全部
+
+        if(renderList.length === 0) { cont.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">暂无节点</div>'; return; }
+
+        renderList.forEach((p) => {
+            const isL = p.isArchived; const pid = p.id;
+            let clr = 'var(--primary-color)';
+            if(type==='mid') clr='var(--mid-color)'; if(type==='long') clr='var(--long-color)';
+            if(type==='super-long') clr='var(--sl-color)'; if(type==='life') clr='var(--life-color)';
+            let hasT = (type==='mid'||type==='long');
+            
+            let dateHtml = isL ? `<span style="font-size:20px;font-weight:bold;color:${clr}">📅 ${p.archiveDate}</span>` : 
+                `<div style="display:flex;align-items:center;"><span style="font-size:14px;margin-right:8px;color:#666;">目标节点:</span><input type="${type==='life'?'number':(type==='long'||type==='super-long'?'month':'date')}" value="${p.date}" onchange="updatePeriodDate('${type}',${pid},this.value)" style="font-size:16px;padding:5px;border:1px solid #ccc;font-weight:bold;color:#333;"></div>`;
+            
+            let head = `<tr><th style="width:20%">项目</th><th style="width:30%">要求</th>${hasT?'<th style="width:10%">目标分</th>':''}<th style="width:15%">完成(%)</th>${hasT?'<th style="width:10%">得分</th>':''}<th>操作</th></tr>`;
+            let total = 0;
+            let rows = p.items.map((i, idx) => {
+                let sc = ''; if(hasT) { let s=i.target*(i.ratio/100); total+=s; sc=`<td style="font-weight:bold;">${s.toFixed(2)}</td>`; }
+                return `<tr><td>${i.name}</td><td style="font-size:13px;color:#555;">${i.desc}</td>${hasT?`<td>${i.target}</td>`:''}<td><input type="number" value="${i.ratio}" class="task-score" ${isL?'disabled':''} onchange="updatePeriodItem('${type}',${pid},${idx},'ratio',this.value)"></td>${sc}<td>${!isL?`<button class="btn-delete" onclick="deletePeriodItem('${type}',${pid},${idx})">删除</button>`:'-'}</td></tr>`;
+            }).join('');
+            
+            let addRow = isL ? '' : `<div class="input-group" style="background:#fff;border:none;padding:0;margin-bottom:15px;"><input type="text" id="name-${pid}" class="task-name" placeholder="名称"><input type="text" id="desc-${pid}" class="task-desc" placeholder="要求">${hasT?`<input type="number" id="target-${pid}" class="task-target" placeholder="目标分">`:''}<button class="btn-add" onclick="addItemToPeriod('${type}',${pid})">添加</button></div>`;
+            
+            cont.innerHTML += `<div class="period-card ${isL?'locked':''}" style="border-left-color:${clr}"><div class="period-header"><div class="period-date-title">${dateHtml} ${isL?'<span style="font-size:12px;background:#64748b;color:white;padding:2px 6px;border-radius:4px;margin-left:10px;">已归档</span>':''}</div><div><button class="btn-delete" onclick="deletePeriod('${type}',${pid})">删除节点</button></div></div>${addRow}<table>${head}${rows}</table><div class="score-board" style="margin-top:15px;background:#f8fafc;border:1px solid #e2e8f0;">${hasT?`<div class="total-score" style="color:${clr}">总分: <span id="total-${pid}">${total.toFixed(2)}</span></div>`:`<div style="color:${clr};font-weight:bold;">${isL?'最终进度':'当前进度'}</div>`}${!isL?`<button class="btn-reset" style="background-color:${clr}" onclick="archivePeriod('${type}',${pid})">结算存档</button>`:'<span></span>'}</div></div>`;
+        });
+    }
+
+    // ... (History / Charts / Export - Standard) ...
+    function openHistoryModal(type) {
+        document.getElementById('genericHistoryModal').style.display = 'flex';
+        const chartCont = document.getElementById('genericChartContainer');
+        const subtitle = document.getElementById('historySubtitle');
+        chartCont.innerHTML = ''; chartCont.style.display = 'none';
+        if (type === 'super-long' || type === 'life') subtitle.style.display = 'none'; else subtitle.style.display = 'block';
+
+        const hKey = getPropName(type, 'History');
+        let h = appData[hKey] || [];
+        h.sort((a,b) => b.timestamp - a.timestamp);
+        
+        if (type === 'daily' || type === 'mid' || type === 'long') {
+            chartCont.style.display = 'block';
+            renderTotalScoreChart(h, type);
+        }
+
+        const tbody = document.getElementById('genericHistoryList'); tbody.innerHTML = '';
+        h.forEach((rec, i) => {
+            let detailHtml = '';
+            if (type === 'daily') {
+                if (rec.categories) {
+                    rec.categories.forEach(cat => {
+                        const cItems = rec.items.filter(it => it.catId === cat.id);
+                        if(cItems.length > 0) {
+                            const sigItems = cItems.map(x=>({name:x.name, weight:x.weight})).sort((a,b)=>a.name.localeCompare(b.name));
+                            const sigJson = JSON.stringify(sigItems).replace(/"/g, '&quot;');
+                            detailHtml += `<div style="background:#e0f2fe; padding:8px; margin-top:8px; font-weight:bold; color:#0369a1; border-top:1px solid #bae6fd; display:flex; justify-content:space-between;"><span>📂 ${cat.name}</span><button class="btn-chart-link" onclick="showCategoryTrend('${cat.name}', ${sigJson})">📈 分类趋势</button></div><table class="sub-table"><thead><tr><th>项目</th><th>要求</th><th>权重</th><th>得分</th></tr></thead><tbody>${cItems.map(it => `<tr><td>${it.name}<button class="btn-chart-link" onclick="showItemTrend('${it.name}', ${it.weight})">📈</button></td><td>${it.desc||'-'}</td><td>${it.weight}%</td><td>${(it.score*(it.weight/100)).toFixed(2)}</td></tr>`).join('')}</tbody></table>`;
+                        }
+                    });
+                } else { detailHtml = `<div style="padding:10px;">旧数据无分类</div>`; }
+            } else {
+                let tHeader = `<th>项目</th><th>要求</th>${(type==='mid'||type==='long')?'<th>目标</th>':''}<th>完成</th>${(type==='mid'||type==='long')?'<th>得分</th>':''}`;
+                let tRows = rec.items.map(it => {
+                     let scoreCol = (type==='mid'||type==='long') ? `<td>${(it.target*(it.ratio/100)).toFixed(2)}</td>` : '';
+                     let targetCol = (type==='mid'||type==='long') ? `<td>${it.target}</td>` : '';
+                     return `<tr><td>${it.name}</td><td>${it.desc}</td>${targetCol}<td>${it.ratio}%</td>${scoreCol}</tr>`;
+                 }).join('');
+                 detailHtml = `<table class="sub-table"><thead><tr>${tHeader}</tr></thead><tbody>${tRows}</tbody></table>`;
+            }
+            let scoreDisplay = (type === 'super-long' || type === 'life') ? '-' : `<strong>${rec.score}</strong>`;
+            tbody.innerHTML += `<tr class="history-row" onclick="this.nextElementSibling.classList.toggle('show')"><td>${rec.date}</td><td><span style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:12px;">已归档</span></td><td>${scoreDisplay}</td><td style="text-align:right;"><button class="btn-delete" onclick="deleteHistoryItem('${type}', ${i})">删除</button></td></tr><tr class="detail-row"><td colspan="4" style="padding:15px; background:#fff;">${detailHtml}</td></tr>`;
+        });
+        document.getElementById('btnExportHistory').onclick = () => exportToCSV(type);
+    }
+    function closeGenericHistoryModal(e) { if(e.target.className === 'modal-overlay') document.getElementById('genericHistoryModal').style.display = 'none'; }
+
+    // 修改：增加 type 参数，生成不同的标题，并携带时间数据
+    function renderTotalScoreChart(historyData, type) {
+        const sorted = [...historyData].sort((a,b) => a.timestamp - b.timestamp);
+        
+        // ★★★ 核心修改：映射数据时，把 entertainmentTime 等带上 ★★★
+        const data = sorted.map(r => ({ 
+            date: r.date, 
+            value: r.score,
+            // 附加数据 (如果不存在则为0)
+            ent: r.entertainmentTime || 0,
+            rew: r.rewardTime || 0,
+            net: (r.rewardTime || 0) - (r.entertainmentTime || 0)
+        }));
+        
+        let chartTitle = "总分趋势图";
+        if (type === 'daily') chartTitle = "每日KPI 总分趋势";
+        else if (type === 'mid') chartTitle = "中期KPI 总分趋势";
+        else if (type === 'long') chartTitle = "长期KPI 总分趋势";
+
+        renderChart(chartTitle, data);
+    }
+    function showItemTrend(targetName, targetWeight) {
+        const h = appData.dailyHistory;
+        const sorted = [...h].sort((a,b) => a.timestamp - b.timestamp);
+        const data = sorted.map(rec => {
+            const match = rec.items.find(i => i.name === targetName && Math.abs(i.weight - targetWeight) < 0.01);
+            return { date: rec.date, value: match ? match.score : null }; // 显示完成度
+        });
+        renderChart(`项目完成度(%)趋势: ${targetName}`, data);
+    }
+    function showCategoryTrend(catName, sigItems) {
+        const h = appData.dailyHistory;
+        const sorted = [...h].sort((a,b) => a.timestamp - b.timestamp);
+        const data = sorted.map(rec => {
+            if(!rec.categories) return { date: rec.date, value: null };
+            const cat = rec.categories.find(c => c.name === catName);
+            if(!cat) return { date: rec.date, value: null };
+            const items = rec.items.filter(i => i.catId === cat.id);
+            if(items.length !== sigItems.length) return { date: rec.date, value: null };
+            const curSig = items.map(x=>({n:x.name, w:x.weight})).sort((a,b)=>a.n.localeCompare(b.n));
+            let match = true;
+            for(let k=0; k<sigItems.length; k++) { if(sigItems[k].name !== curSig[k].n || Math.abs(sigItems[k].weight - curSig[k].w) > 0.01) { match=false; break; } }
+            if(match) {
+                let totalWeightedScore = 0; let totalWeight = 0;
+                items.forEach(i => { totalWeightedScore += (i.score * (i.weight/100)); totalWeight += i.weight; });
+                return { date: rec.date, value: totalWeight===0?0:(totalWeightedScore/totalWeight)*100 };
+            }
+            return { date: rec.date, value: null };
+        });
+        renderChart(`分类完成度(%)趋势: ${catName}`, data);
+    }
+// ==================== 图表分页核心逻辑 (修复版) ====================
+let chartGlobalState = {
+    title: '',
+    data: [],
+    page: 0,   // 0 = 最新的数据页
+    pageSize: 7 // 修改为用户要求的 7 天
+};
+
+function renderChart(title, data) {
+    // 只有当标题改变时（比如从“总分”切换到“分类趋势”），才重置页码为0
+    if (title !== chartGlobalState.title) {
+        chartGlobalState.title = title;
+        chartGlobalState.page = 0;
+        chartGlobalState.data = data; // 缓存完整数据
+    }
+    
+    const cont = document.getElementById('genericChartContainer');
+    cont.style.display = 'block'; 
+    cont.innerHTML = '';
+
+    // 过滤无效数据并克隆一份防止污染
+    const validData = chartGlobalState.data.filter(d => d.value !== null);
+    
+    if(validData.length === 0) { 
+        cont.innerHTML = `<div style="text-align:center; padding:40px; color:#666;">${title}<br>无有效数据</div>`; 
+        return; 
+    }
+
+    const totalLen = validData.length;
+    
+    // --- 核心修复：计算分页边界 ---
+    const maxPage = Math.max(0, Math.ceil(totalLen / chartGlobalState.pageSize) - 1);
+    if (chartGlobalState.page > maxPage) chartGlobalState.page = maxPage;
+    if (chartGlobalState.page < 0) chartGlobalState.page = 0;
+
+    // 计算切片范围 (注意：这是从后往前切，即 page 0 是最后（最新）的 pageSize 条)
+    const end = totalLen - (chartGlobalState.page * chartGlobalState.pageSize);
+    const start = Math.max(0, end - chartGlobalState.pageSize);
+    const pageData = validData.slice(start, end);
+
+    // 按钮状态判定
+    const canGoPrev = start > 0;      // 还有更早的数据
+    const canGoNext = end < totalLen; // 还可以往“更新”的方向走
+
+    // 渲染控制栏
+    cont.innerHTML = `
+        <div class="chart-controls">
+            <button class="btn-chart-nav" ${canGoPrev ? '' : 'disabled'} onclick="changeChartPage(1)">⬅️ 更早</button>
+            <div style="text-align:center;">
+                <div style="font-weight:bold; color:#333;">${title}</div>
+                <div class="chart-page-info">
+                    第 ${chartGlobalState.page + 1} 页 / 共 ${maxPage + 1} 页 
+                    (${pageData[0].date.slice(5)} ~ ${pageData[pageData.length-1].date.slice(5)})
+                </div>
+            </div>
+            <button class="btn-chart-nav" ${canGoNext ? '' : 'disabled'} onclick="changeChartPage(-1)">更新 ➡️</button>
+        </div>
+    `;
+
+    if (pageData.length === 0) return;
+
+    // --- 绘图逻辑保持不变，但使用 pageData ---
+    const w = cont.clientWidth || 800; 
+    const h = 240; 
+    const p = 40;
+    const localMax = Math.max(...pageData.map(d=>d.value));
+    const maxVal = Math.max(100, localMax + 10); 
+    // 防止单点时除以0
+    const xStep = pageData.length > 1 ? (w - p*2) / (pageData.length - 1) : 0;
+    
+    let path = ""; let dots = ""; let lbls = ""; let first = true;
+    
+    let svgHtml = `<svg viewBox="0 0 ${w} ${h}" style="margin-top:10px;">
+        <line x1="${p}" y1="${h-p}" x2="${w-p}" y2="${h-p}" stroke="#cbd5e1" stroke-width="2"/>
+        <line x1="${p}" y1="${p}" x2="${p}" y2="${h-p}" stroke="#cbd5e1" stroke-width="2"/>
+        <line x1="${p}" y1="${h-p - (100/maxVal)*(h-p*2)}" x2="${w-p}" y2="${h-p - (100/maxVal)*(h-p*2)}" stroke="#e2e8f0" stroke-dasharray="5,5"/>
+        <text x="${p-5}" y="${h-p - (100/maxVal)*(h-p*2) + 5}" text-anchor="end" font-size="10" fill="#94a3b8">100</text>
+    `;
+
+    pageData.forEach((d, i) => {
+        const x = p + i * xStep;
+        const y = h - p - ((d.value / maxVal) * (h - p*2));
+        if (first) path += `M ${x} ${y} `; else path += `L ${x} ${y} `; first = false;
+        dots += `<circle cx="${x}" cy="${y}" r="5" class="chart-dot"><title>${d.date}: ${d.value.toFixed(2)}</title></circle>`;
+        lbls += `<text x="${x}" y="${y-12}" text-anchor="middle" class="chart-tooltip-text" style="font-size:11px; font-weight:bold; fill:var(--primary-color);">${parseFloat(d.value).toFixed(1)}</text>`;
+        lbls += `<text x="${x}" y="${h-15}" text-anchor="middle" style="font-size:10px;fill:#64748b;">${d.date.slice(5)}</text>`;
+    });
+
+    svgHtml += `<path d="${path}" fill="none" stroke="var(--primary-color)" stroke-width="3" stroke-linejoin="round"/>${dots}${lbls}</svg>`;
+    const svgDiv = document.createElement('div');
+    svgDiv.innerHTML = svgHtml;
+    cont.appendChild(svgDiv);
+}
+
+// 翻页控制函数 (修正逻辑)
+function changeChartPage(direction) {
+    chartGlobalState.page += direction;
+    // 直接调用渲染，不改变 title 以免触发重置
+    renderChart(chartGlobalState.title, chartGlobalState.data);
+}
+    function exportToCSV(type) {
+        const key = getPropName(type, 'History'); let d = appData[key]; if(!d || d.length==0) return alert("无数据");
+        let c = (type === 'daily') ? "\ufeff日期,总分,分类,项目,具体要求,权重,完成度,加权得分\n" : (type === 'mid' || type === 'long') ? "\ufeff节点日期,总分,项目,具体要求,目标分,完成度,最终得分\n" : "\ufeff节点日期,节点名称,项目,具体描述,完成度\n";
+        d.forEach(r => {
+            if(type === 'daily') r.items.forEach(i => { let catName = "未知"; if(r.categories) { const cat = r.categories.find(ca => ca.id === i.catId); if(cat) catName = cat.name; } c += `${r.date},${r.score||0},${catName},${i.name},${(i.desc||'').replace(/,/g,' ')},${i.weight+'%'},${i.score},${(i.score*(i.weight/100)).toFixed(2)}\n`; });
+            else if (type === 'mid' || type === 'long') r.items.forEach(i => c += `${r.date},${r.score||0},${i.name},${(i.desc||'').replace(/,/g,' ')},${i.target},${i.ratio+'%'},${(i.target*(i.ratio/100)).toFixed(2)}\n`);
+            else r.items.forEach(i => c += `${r.date},${r.periodName},${i.name},${(i.desc||'').replace(/,/g,' ')},${i.ratio+'%'}\n`);
+        });
+        const b = new Blob([c], {type:'text/csv;charset=utf-8;'}); const l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = `${type}_Export.csv`; l.click();
+    }
+
+    // 全局变量：记录当前聊天的显示数量
+    let chatPageSize = 10; 
+
+    function renderChatHistory() {
+        const body = document.getElementById('chatBody');
+        // 清空除了 system 提示语之外的内容
+        // 这里我们要保留顶部的 system msg，所以先找到它
+        const sysMsg = body.querySelector('.msg.system');
+        body.innerHTML = '';
+        if(sysMsg) body.appendChild(sysMsg);
+
+        // 插入“加载更多”的提示区
+        const loader = document.createElement('div');
+        loader.className = 'chat-loading-history';
+        loader.innerText = '正在加载更多记录...';
+        body.appendChild(loader);
+
+        const history = appData.chatHistory || [];
+        const total = history.length;
+        
+        // 计算本次要显示的片段 (从后往前取)
+        // 例如总共50条，pageSize=10，则取 40~50
+        const startIdx = Math.max(0, total - chatPageSize);
+        const renderData = history.slice(startIdx);
+
+        // 渲染消息
+        renderData.forEach(msg => {
+            if (msg.role === 'user') body.innerHTML += `<div class="msg user">${msg.content}</div>`;
+            else body.innerHTML += `<div class="msg ai">${formatAIResponse(msg.content)}<div class="copy-btn" onclick="navigator.clipboard.writeText(this.parentElement.innerText.replace('📋 复制',''));this.innerText='✅ 已复制';setTimeout(()=>this.innerText='📋 复制',2000)">📋 复制</div></div>`;
+        });
+
+        // 绑定滚动事件 (实现触顶加载)
+        body.onscroll = function() {
+            if (body.scrollTop === 0 && chatPageSize < total) {
+                // 记录当前滚动高度
+                const oldHeight = body.scrollHeight;
+                
+                // 显示加载动画
+                loader.style.display = 'block';
+                
+                // 模拟延时 (让用户感觉到在加载，防止闪烁)
+                setTimeout(() => {
+                    chatPageSize += 10; // 增加显示数量
+                    renderChatHistory(); // 重新渲染
+                    
+                    // 恢复滚动位置 (保持用户当前的视线位置)
+                    const newHeight = document.getElementById('chatBody').scrollHeight;
+                    document.getElementById('chatBody').scrollTop = newHeight - oldHeight;
+                }, 300);
+            }
+        };
+        
+        // 初始加载滚到底部
+        if (chatPageSize === 10) body.scrollTop = body.scrollHeight;
+    }
+    function toggleChatWindow() { const w = document.getElementById('chatWindow'); w.style.display = w.style.display==='flex' ? 'none' : 'flex'; }
+    function toggleConfigPanel() { document.getElementById('configPanel').classList.toggle('show'); }
+    function saveApiConfig() { localStorage.setItem(API_CONFIG_KEY, JSON.stringify({ host: document.getElementById('apiHost').value.trim(), model: document.getElementById('apiModel').value.trim(), key: document.getElementById('apiKey').value.trim() })); alert("配置已保存"); toggleConfigPanel(); }
+    function formatAIResponse(text) {
+        let formatted = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+        formatted = formatted.replace(/^- /gm, '• ');
+        formatted = formatted.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+        return formatted;
+    }
+    async function sendToAI() {
+        const inp = document.getElementById('chatInput'); 
+        const txt = inp.value.trim(); 
+        if(!txt) return;
+        
+        const cfg = JSON.parse(localStorage.getItem(API_CONFIG_KEY)||'{}'); 
+        if(!cfg.key) return alert("请配置API Key");
+        
+        const body = document.getElementById('chatBody');
+        
+        // 1. 立即显示用户消息
+        const userDiv = document.createElement('div');
+        userDiv.className = 'msg user';
+        userDiv.innerText = txt;
+        body.appendChild(userDiv);
+        inp.value = ''; 
+        body.scrollTop = body.scrollHeight;
+        
+        // 保存用户消息
+        if(!appData.chatHistory) appData.chatHistory = [];
+        appData.chatHistory.push({role: 'user', content: txt});
+        
+        // 显示 Loading
+        const loadingDiv = document.createElement('div'); 
+        loadingDiv.className = 'msg ai'; 
+        loadingDiv.innerText = '正在输出中...'; 
+        body.appendChild(loadingDiv); 
+        body.scrollTop = body.scrollHeight;
+
+        const ctx = { daily: { items: appData.dailyItems, categories: appData.dailyCategories, historySample: appData.dailyHistory.slice(0,3) }, mid: appData.midPeriods.filter(p => !p.isArchived), long: appData.longPeriods.filter(p => !p.isArchived), life: appData.lifePeriods.filter(p => !p.isArchived) };
+        const systemPrompt = `[角色定义]
+你是一位拥有极高智慧、理性且富有同理心的“人生战略顾问”和“首席数据分析师”。你的服务对象正在使用一套量化的【个人人生KPI系统】来管理自己的人生。
+你的任务是：基于用户传入的 JSON 数据，通过逻辑推演，评估用户的执行力、方向感和潜在风险，回答用户的问题。
+
+[数据结构框架讲解] (请仔细阅读以下字段含义)
+
+1. **每日KPI (Context.daily)** -> 代表“当日生活质量的情况”
+   - **categories (分类)**: 用户的生活维度（如：健康、工作、学习），包含各种具体任务。
+   - **items (项目)**: 每日的具体任务。
+     - \`weight\` (权重%): 代表该任务的重要性。权重高但得分低，是严重问题。
+     - \`score\` (得分): 代表今日完成该任务的情况。
+     - \`catId\`: 关联到分类的ID。
+   - **historySample (历史样本)**: 包含最近7次的每日存档。用于判断用户的近期状况和趋势。
+
+2. **中期/长期 KPI (Context.mid / Context.long)** -> 代表用户中期目标（两周时长）/长期目标（2个月时长）
+   - **activePeriods (进行中的节点)**: 用户本次中期时间段（两周时长）结束的那天/长期时间段（2个月时长）结束的那月
+   - **items (项目)**:所在两周时间段的具体任务/所在2个月时间段的具体任务
+     - \`target\` (目标分): 该任务的价值总量。
+     - \`ratio\` (完成度%): 实际完成进度。
+     - **逻辑**: 如果一个项目 \`target\` 很高但 \`ratio\` 为0，说明存在严重的拖延或畏难情绪。
+
+3. **超长期/人生规划 (Context.superLong / Context.life)** -> 代表长期战略，人生大方向（超长期为半年，人生规划任务为5年）
+   - 这些项目通常没有具体分数(\`target\`)，只有完成度(\`ratio\`)。
+   - **items**: 代表用户大方向的具体任务。
+   - **分析逻辑**: 检查【每日KPI】的执行是否在为【人生规划】服务。例如：人生规划有“健康长寿”，但每日KPI里没有“运动”或运动得分为0，这就是“知行不合”，请指出这一点。
+
+
+4. **时间资产 (Time Assets)** -> 代表用户的“时间娱乐装库”
+   - **数据字段**: ent(娱乐消耗/支出), rew(奖励获得/收入), net(净增/盈余)。
+   - **分析逻辑**: 
+     - 将时间视为货币。**娱乐消耗**是“消费”，**奖励获得**是“努力回报”。
+     - 如果用户 Daily Score 很高，但 Time Net（净增）持续为负，说明他虽然很努力，但是娱乐活动过度，会影响未来发展。
+     - 如果用户的 Long/Life 节点没有带来足够的 Reward Time，说明用户的努力程度不够或努力方向错误。
+
+[分析输出要求]
+要认真阅读用户的问题，仔细分析用户数据，从多维度各方面考虑回答，注意一定不要答非所问。
+
+数据JSON: ${JSON.stringify(ctx)}`;
+        
+        try {
+            const res = await fetch(`${cfg.host}/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.key}` }, body: JSON.stringify({ model: cfg.model, messages: [ { role: "system", content: systemPrompt }, { role: "user", content: txt } ], stream: false }) });
+            const d = await res.json(); 
+            const r = d.choices?.[0]?.message?.content || "API Error: " + JSON.stringify(d);
+            
+            // 移除 Loading，显示结果
+            body.removeChild(loadingDiv);
+            body.innerHTML += `<div class="msg ai">${formatAIResponse(r)}<div class="copy-btn" onclick="navigator.clipboard.writeText(this.parentElement.innerText.replace('📋 复制',''));this.innerText='✅ 已复制';setTimeout(()=>this.innerText='📋 复制',2000)">📋 复制</div></div>`;
+            
+            // 保存 AI 消息 (不再删除旧消息，实现无限记录)
+            appData.chatHistory.push({role: 'ai', content: r});
+            saveData();
+            
+        } catch(e) { 
+            loadingDiv.style.color = 'red'; 
+            loadingDiv.innerText = `请求失败: ${e.message}`; 
+        }
+        body.scrollTop = body.scrollHeight;
+    }
+    
+    // 修复后的删除逻辑：如果是 daily，则不进行联动删除
+    function deleteHistoryItem(type, index) {
+        if(!confirm("确定删除此历史记录？")) return;
+        const hKey = getPropName(type, 'History'); let list = appData[hKey];
+        const targetRecord = list[index];
+        if (targetRecord && type !== 'daily') {
+            const pKey = getPropName(type, 'Periods'); const periods = appData[pKey];
+            if (periods) {
+                const pIdx = periods.findIndex(p => p.isArchived && p.date === targetRecord.date);
+                if (pIdx > -1) { periods.splice(pIdx, 1); renderPeriods(type); }
+            }
+        }
+        list.splice(index, 1); saveData(); openHistoryModal(type);
+    }
+    // ==================== v34.0 时间控制台核心逻辑 (硬核修复版) ====================
+    let timeAppState = {
+        view: 'daily', 
+        page: 0,       
+        pageSize: 7,   // ★ 改为 7 次
+        aggregatedData: [] 
+    };
+
+    function toggleTimeWindow() {
+        const w = document.getElementById('timeWindow');
+        w.style.display = (w.style.display === 'flex') ? 'none' : 'flex';
+        if(w.style.display === 'flex') processTimeData();
+    }
+
+    function switchTimeView(view) {
+        timeAppState.view = view;
+        timeAppState.page = 0;
+        document.querySelectorAll('.view-tab').forEach(el => el.classList.remove('active'));
+        document.querySelector(`.view-tab[onclick="switchTimeView('${view}')"]`).classList.add('active');
+        processTimeData();
+    }
+
+    function changeTimePage(dir) {
+        timeAppState.page += dir;
+        renderTimeChartUI();
+    }
+
+   function processTimeData() {
+        let rawEvents = []; 
+
+        const formatDate = (ts) => {
+            const d = new Date(ts);
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        };
+        
+        const formatShortDate = (ts) => {
+            const d = new Date(ts);
+            return `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+        };
+
+        // 1. 收集 Daily
+        (appData.dailyHistory || []).forEach(item => {
+            rawEvents.push({
+                ts: item.timestamp || new Date(item.date).getTime(),
+                ent: item.entertainmentTime || 0,
+                rew: item.rewardTime || 0
+            });
+        });
+
+        // 2. 收集 Periods (Mid/Long/Life)
+        ['mid', 'long', 'superLong', 'life'].forEach(type => {
+            const hKey = getPropName(type, 'History');
+            (appData[hKey] || []).forEach(item => {
+                let ts = item.timestamp;
+                
+                // ★★★ 兜底修复：如果检测到是1970年的错误数据(ts很小)，重新计算 ★★★
+                if(!ts || ts < 100000000000) { 
+                    const dStr = String(item.date); // 关键：转字符串
+                    if(dStr.length===4) ts = new Date(parseInt(dStr), 11, 31, 23, 59, 59).getTime();
+                    else if(dStr.length===7) ts = new Date(parseInt(dStr.split('-')[0]), parseInt(dStr.split('-')[1]), 0, 23, 59, 59).getTime();
+                    else ts = new Date(item.date).getTime();
+                }
+                rawEvents.push({ ts: ts, ent: 0, rew: item.rewardTime || 0 });
+            });
+        });
+
+        // 3. 全局累计
+        let globalEnt = 0, globalRew = 0;
+        rawEvents.forEach(e => { globalEnt += e.ent; globalRew += e.rew; });
+        const globalNet = globalRew - globalEnt;
+        const netEl = document.getElementById('globalTotalNet');
+        if(netEl) {
+            netEl.innerText = (globalNet > 0 ? "+" : "") + globalNet.toFixed(1);
+            netEl.style.color = globalNet >= 0 ? '#0284c7' : '#ef4444';
+        }
+
+        // 4. 视图聚合
+        rawEvents.sort((a,b) => a.ts - b.ts);
+
+        if (timeAppState.view === 'daily') {
+            // --- 每日视图 ---
+            let dailyMap = new Map();
+            rawEvents.forEach(e => {
+                let d = formatDate(e.ts);
+                if(!dailyMap.has(d)) dailyMap.set(d, { date: d, ent: 0, rew: 0, ts: e.ts });
+                let node = dailyMap.get(d);
+                node.ent += e.ent;
+                node.rew += e.rew;
+            });
+            timeAppState.aggregatedData = Array.from(dailyMap.values()).sort((a,b) => a.ts - b.ts);
+        
+        } else {
+            // --- 双周视图 ---
+            const anchorTs = new Date(2024, 11, 14, 23, 59, 59).getTime(); 
+            const oneDay = 86400000;
+            let bucketMap = new Map();
+
+            rawEvents.forEach(e => {
+                let diffDays = Math.floor((e.ts - anchorTs) / oneDay);
+                let bucketId = Math.floor((diffDays + 13) / 14); 
+                
+                let endTs = anchorTs + (bucketId * 14 * oneDay);
+                let startTs = endTs - (13 * oneDay);
+                let label = `${formatShortDate(startTs)}~${formatShortDate(endTs)}`;
+                
+                if(!bucketMap.has(label)) {
+                    bucketMap.set(label, { date: label, ent: 0, rew: 0, ts: endTs });
+                }
+                let node = bucketMap.get(label);
+                node.ent += e.ent;
+                node.rew += e.rew;
+            });
+
+            timeAppState.aggregatedData = Array.from(bucketMap.values()).sort((a,b) => a.ts - b.ts);
+        }
+
+        renderTimeChartUI();
+    }
+    function renderTimeChartUI() {
+        const totalLen = timeAppState.aggregatedData.length;
+        const ps = timeAppState.pageSize;
+        const end = totalLen - (timeAppState.page * ps);
+        const start = Math.max(0, end - ps);
+        const pageData = timeAppState.aggregatedData.slice(start, end);
+        
+        document.getElementById('btnTimePrev').disabled = (start <= 0);
+        document.getElementById('btnTimeNext').disabled = (timeAppState.page <= 0);
+        
+        if (pageData.length > 0) {
+            let rangeText = timeAppState.view === 'daily' 
+                ? `${pageData[0].date} ~ ${pageData[pageData.length-1].date}`
+                : `最近 ${pageData.length} 个周期 (以14天为单位)`;
+            document.getElementById('timePageInfo').innerText = rangeText;
+        } else {
+            document.getElementById('timePageInfo').innerText = "无数据";
+            document.getElementById('timeChartCanvas').innerHTML = '<div style="text-align:center;padding:50px;color:#ccc">暂无记录</div>';
+            return;
+        }
+
+        // 计算本页统计
+        let pEnt = 0, pRew = 0;
+        pageData.forEach(d => { pEnt += d.ent; pRew += d.rew; });
+        document.getElementById('pageEntSum').innerText = pEnt.toFixed(1);
+        document.getElementById('pageRewSum').innerText = pRew.toFixed(1);
+        document.getElementById('pageNetSum').innerText = (pRew - pEnt).toFixed(1);
+
+        drawTimeSVG(pageData);
+    }
+
+    function drawTimeSVG(data) {
+        const cont = document.getElementById('timeChartCanvas');
+        cont.innerHTML = '';
+        const w = cont.clientWidth || 460;
+        const h = 250;
+        const topP = 40; // 顶部给极值
+        const bottomP = 35; // ★ 底部留大一点给双周日期
+        const p = 30; 
+
+        let values = [];
+        data.forEach(d => { values.push(d.ent); values.push(d.rew); values.push(d.rew - d.ent); });
+        
+        let maxVal = Math.max(...values, 5); 
+        let minVal = Math.min(...values, 0); 
+        let range = maxVal - minVal;
+        if (range === 0) range = 10;
+
+        const xStep = (w - p*2) / (Math.max(1, data.length - 1));
+        const graphH = h - bottomP;
+        const getY = (v) => graphH - ((v - minVal) / range) * (graphH - topP);
+        const zeroY = getY(0);
+
+        let pathEnt = "", pathRew = "", pathNet = "";
+        let dots = "";
+        let dateLabels = ""; 
+        let first = true;
+
+        data.forEach((d, i) => {
+            const x = p + i * xStep;
+            const yEnt = getY(d.ent);
+            const yRew = getY(d.rew);
+            const yNet = getY(d.rew - d.ent);
+
+            if (first) {
+                pathEnt += `M ${x} ${yEnt} `; pathRew += `M ${x} ${yRew} `; pathNet += `M ${x} ${yNet} `; first = false;
+            } else {
+                pathEnt += `L ${x} ${yEnt} `; pathRew += `L ${x} ${yRew} `; pathNet += `L ${x} ${yNet} `;
+            }
+
+            // 点
+            dots += `<circle cx="${x}" cy="${yEnt}" r="3" fill="#ef4444"><title>${d.date}\n消耗: ${d.ent}</title></circle>`;
+            dots += `<circle cx="${x}" cy="${yRew}" r="3" fill="#10b981"><title>${d.date}\n奖励: ${d.rew}</title></circle>`;
+            dots += `<circle cx="${x}" cy="${yNet}" r="4" fill="#2563eb"><title>${d.date}\n净增: ${(d.rew-d.ent).toFixed(1)}</title></circle>`;
+            
+            // ★ 日期标签 (处理每日vs双周显示)
+            let lbl = d.date;
+            // 如果是每日视图 (2025-01-01)，只显示 01-01
+            if (lbl.length === 10 && lbl.includes('-')) lbl = lbl.slice(5);
+            // 字体缩小一点，避免挤在一起
+            dateLabels += `<text x="${x}" y="${h-10}" text-anchor="middle" font-size="9" fill="#64748b">${lbl}</text>`;
+        });
+
+        // 图例 (放在最上面，绝对不重叠)
+        let legend = `<div style="display:flex; justify-content:center; gap:15px; font-size:12px; margin-bottom:5px;">
+            <span style="color:#ef4444; font-weight:bold;">● 消耗</span>
+            <span style="color:#10b981; font-weight:bold;">● 奖励</span>
+            <span style="color:#2563eb; font-weight:bold;">● 净增</span>
+        </div>`;
+
+        let svg = `<svg viewBox="0 0 ${w} ${h}">
+            <line x1="${p}" y1="${zeroY}" x2="${w-p}" y2="${zeroY}" stroke="#cbd5e1" stroke-dasharray="4"/>
+            <text x="${p-5}" y="${zeroY+4}" text-anchor="end" font-size="10" fill="#94a3b8">0</text>
+            <text x="${p-5}" y="${topP}" text-anchor="end" font-size="10" fill="#94a3b8">${maxVal.toFixed(0)}</text>
+            <text x="${p-5}" y="${graphH}" text-anchor="end" font-size="10" fill="#94a3b8">${minVal.toFixed(0)}</text>
+            
+            <path d="${pathEnt}" fill="none" stroke="#ef4444" stroke-width="2" stroke-opacity="0.5" />
+            <path d="${pathRew}" fill="none" stroke="#10b981" stroke-width="2" stroke-opacity="0.5" />
+            <path d="${pathNet}" fill="none" stroke="#2563eb" stroke-width="3" />
+            
+            ${dateLabels}
+            ${dots}
+        </svg>`;
+        
+        cont.innerHTML = legend + svg;
+    }
+        // 绑定加载
+    window.onload = function() {
+        loadData(); // 原有加载
+        
+        // ★★★ 新增：恢复上次未存档的娱乐/奖励输入 ★★★
+        const savedEnt = localStorage.getItem('temp_dailyEnt');
+        const savedRew = localStorage.getItem('temp_dailyRew');
+        if(savedEnt) document.getElementById('dailyEnt').value = savedEnt;
+        if(savedRew) document.getElementById('dailyRew').value = savedRew;
+    };
+</script>
+<div class="time-float-btn" onclick="toggleTimeWindow()">⏱️ 时间资产</div>
+
+<div class="time-window" id="timeWindow">
+    <div class="time-header">
+        <span>时间收支趋势</span>
+        <span style="cursor:pointer;" onclick="toggleTimeWindow()">✖</span>
+    </div>
+    <div class="view-tabs">
+        <div class="view-tab active" onclick="switchTimeView('daily')">📅 每日视图</div>
+        <div class="view-tab" onclick="switchTimeView('biweekly')">📊 双周视图 (14天)</div>
+    </div>
+    <div class="time-body">
+	<div style="background:#f0f9ff; padding:10px; border-radius:8px; margin-bottom:15px; text-align:center; border:1px solid #bae6fd;">
+    <div style="font-size:12px; color:#0369a1; font-weight:bold;">🏆 历史累计剩余时间</div>
+    <div id="globalTotalNet" style="font-size:24px; font-weight:bold; color:#0284c7;">计算中...</div>
+</div>
+        <div class="stat-grid">
+            <div class="stat-card ent"><div class="stat-label">本页消耗</div><div class="stat-val" id="pageEntSum">0</div></div>
+            <div class="stat-card rew"><div class="stat-label">本页奖励</div><div class="stat-val" id="pageRewSum">0</div></div>
+            <div class="stat-card net"><div class="stat-label">本页净增</div><div class="stat-val" id="pageNetSum">0</div></div>
+        </div>
+
+        <div class="chart-controls">
+            <button class="btn-chart-nav" id="btnTimePrev" onclick="changeTimePage(1)">⬅️ 更早</button>
+            <div style="text-align:center;">
+                <div class="chart-page-info" id="timePageInfo">加载中...</div>
+            </div>
+            <button class="btn-chart-nav" id="btnTimeNext" onclick="changeTimePage(-1)">更新 ➡️</button>
+        </div>
+
+        <div id="timeChartCanvas" style="width:100%; height:250px;"></div>
+    </div>
+</div>
+</body>
 </html>
